@@ -1,31 +1,45 @@
 require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
-const express = require('express');
 
 const token = process.env.BOT_TOKEN;
 const bot = new TelegramBot(token, { polling: true });
 
 const WEB_APP_URL = process.env.WEB_APP_URL || 'http://localhost:3000';
 
-bot.onText(/\/start(?:\s+(.+))?/, (msg, match) => {
-  const chatId = msg.chat.id;
-  const payload = match && match[1] ? match[1] : '';
-  // send a message with an inline keyboard opening the web app
-  const opts = {
-    reply_markup: {
-      inline_keyboard: [[{
-        text: 'Open web app',
-        url: `${WEB_APP_URL}/?userId=${chatId}`
-      }]]
-    }
+function buildKeyboard() {
+  // web_app type - Telegram Mini App sifatida ochadi (HTTPS kerak)
+  // fallback: agar http bo'lsa oddiy url button ishlatiladi
+  const isHttps = WEB_APP_URL.startsWith('https://');
+  return {
+    inline_keyboard: [[
+      isHttps
+        ? { text: '🚖 Taksi buyurtma', web_app: { url: WEB_APP_URL } }
+        : { text: '🚖 Taksi buyurtma', url: WEB_APP_URL }
+    ]]
   };
-  bot.sendMessage(chatId, 'Web app orqali buyurtma berish uchun bosing', opts);
+}
+
+// Shaxsiy chat va guruhda /start
+bot.onText(/^\/start(@\w+)?(\s|$)/, (msg) => {
+  const chatId = msg.chat.id;
+  bot.sendMessage(chatId, '🚕 Taksi buyurtma berish uchun quyidagi tugmani bosing:', {
+    reply_markup: buildKeyboard()
+  });
 });
 
-// optional: handle simple text orders from users
+// Guruhda oddiy xabar yozilganda ham yordam ko'rsatish (ixtiyoriy)
 bot.on('message', (msg) => {
-  // ignore /start because handled above
-  if (msg.text && msg.text.startsWith('/')) return;
+  if (msg.text && msg.text.startsWith('/')) return; // komandalar yuqorida
+  // guruhda bot mention qilinsa yoki shaxsiy chatda xabar bo'lsa
+  const isPrivate = msg.chat.type === 'private';
+  const isMentioned = msg.text && msg.entities &&
+    msg.entities.some(e => e.type === 'mention' && msg.text.substring(e.offset, e.offset + e.length).toLowerCase().includes('bot'));
+
+  if (isPrivate || isMentioned) {
+    bot.sendMessage(msg.chat.id, '🚕 Taksi buyurtma berish uchun:', {
+      reply_markup: buildKeyboard()
+    });
+  }
 });
 
 console.log('Bot started');

@@ -1,13 +1,10 @@
 require('dotenv').config();
-try {
-  require('./bot');
-} catch (err) {
-  console.error('Bot ishga tushmadi:', err && err.message ? err.message : err);
-}
 
 const express = require('express');
 const path = require('path');
 const axios = require('axios');
+
+const { bot, useWebhook } = require('./bot');
 
 const app = express();
 app.use(express.json());
@@ -15,9 +12,19 @@ app.use(express.urlencoded({ extended: true }));
 
 const PORT = process.env.PORT || 3000;
 const BOT_TOKEN = process.env.BOT_TOKEN;
-const PERSONAL_GROUP_ID = process.env.PERSONAL_GROUP_ID; // taksichlar guruhi
+const WEB_APP_URL = (process.env.WEB_APP_URL || '').replace(/\/$/, '');
+const PERSONAL_GROUP_ID = process.env.PERSONAL_GROUP_ID;
 
 app.use('/', express.static(path.join(__dirname, 'web')));
+
+// Webhook endpoint (faqat production da ishlatiladi)
+if (useWebhook) {
+  const webhookPath = `/tgwebhook/${BOT_TOKEN}`;
+  app.post(webhookPath, (req, res) => {
+    bot.processUpdate(req.body);
+    res.sendStatus(200);
+  });
+}
 
 async function sendToTelegram(chatId, text) {
   if (!BOT_TOKEN || !chatId) return;
@@ -31,10 +38,10 @@ async function sendToTelegram(chatId, text) {
 app.post('/request', async (req, res) => {
   const { from, to, phone, userId, username } = req.body;
   if (!from || !to || !phone) {
-    return res.status(400).json({ ok: false, error: "Qayerdan, qayerga va telefon raqam kerak" });
+    return res.status(400).json({ ok: false, error: 'Qayerdan, qayerga va telefon raqam kerak' });
   }
 
-  const userLabel = username ? username : (userId ? `ID: ${userId}` : 'Noma\'lum');
+  const userLabel = username || (userId ? `ID: ${userId}` : "Noma'lum");
   const text =
     `🚕 <b>Yangi taksi buyurtma!</b>\n\n` +
     `📍 <b>Qayerdan:</b> ${from}\n` +
@@ -51,4 +58,15 @@ app.post('/request', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => console.log(`Web app ishlamoqda: http://localhost:${PORT}`));
+app.listen(PORT, async () => {
+  console.log(`Web app ishlamoqda: http://localhost:${PORT}`);
+  if (useWebhook) {
+    const webhookUrl = `${WEB_APP_URL}/tgwebhook/${BOT_TOKEN}`;
+    try {
+      await bot.setWebHook(webhookUrl);
+      console.log(`Webhook o'rnatildi: ${webhookUrl}`);
+    } catch (err) {
+      console.error('Webhook xatosi:', err.message);
+    }
+  }
+});

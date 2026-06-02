@@ -1,17 +1,16 @@
 {
-  "name": "taksi-bot",
+  "name": "taksi_bot_new",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Telegram bot + web app for taxi requests",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js",
+    "bot": "node bot.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "dotenv": "^17.4.2",
-    "mongoose": "^9.6.3",
-    "node-telegram-bot-api": "^0.67.0"
+    "axios": "^1.4.0",
+    "dotenv": "^16.0.0",
+    "express": "^4.18.2",
+    "node-telegram-bot-api": "^0.61.0"
   }
 }

@@ -47,17 +47,24 @@ async function sendToTelegram(chatId, text) {
 }
 
 app.post('/request', async (req, res) => {
-  const { from, to, phone, userId, username } = req.body;
+  const { name, serviceType, from, to, phone, passengers, userId, username } = req.body;
   if (!from || !to || !phone) {
     return res.status(400).json({ ok: false, error: 'Qayerdan, qayerga va telefon raqam kerak' });
   }
 
   const userLabel = username || (userId ? `ID: ${userId}` : "Noma'lum");
+  const isTaksi = serviceType === 'taksi';
+
+  const header  = isTaksi ? '🚕 <b>Yangi TAKSI buyurtma!</b>' : '📦 <b>Yangi YETKAZIB BERISH buyurtma!</b>';
+  const pasLine = isTaksi && passengers ? `\n👥 <b>Yo'lovchi soni:</b> ${passengers} kishi` : '';
+
   const text =
-    `🚕 <b>Yangi taksi buyurtma!</b>\n\n` +
+    `${header}\n\n` +
+    `👤 <b>Ism:</b> ${name || "Noma'lum"}\n` +
     `📍 <b>Qayerdan:</b> ${from}\n` +
-    `📍 <b>Qayerga:</b> ${to}\n` +
-    `📞 <b>Telefon:</b> ${phone}\n` +
+    `📍 <b>Qayerga:</b> ${to}` +
+    pasLine +
+    `\n📞 <b>Telefon:</b> ${phone}\n` +
     `👤 <b>Foydalanuvchi:</b> ${userLabel}`;
 
   try {

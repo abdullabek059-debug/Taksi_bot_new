@@ -1,19 +1,18 @@
 <!doctype html>
 <html lang="uz">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>Taksi buyurtma</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+  <title>Buyurtma</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root {
-      --bg: var(--tg-theme-bg-color, #ffffff);
-      --text: var(--tg-theme-text-color, #222222);
-      --hint: var(--tg-theme-hint-color, #888888);
-      --link: var(--tg-theme-link-color, #2678b6);
-      --btn: var(--tg-theme-button-color, #2678b6);
-      --btn-text: var(--tg-theme-button-text-color, #ffffff);
-      --secondary-bg: var(--tg-theme-secondary-bg-color, #f4f4f5);
+      --bg:      var(--tg-theme-bg-color, #ffffff);
+      --text:    var(--tg-theme-text-color, #222222);
+      --hint:    var(--tg-theme-hint-color, #888888);
+      --btn:     var(--tg-theme-button-color, #2678b6);
+      --btn-txt: var(--tg-theme-button-text-color, #ffffff);
+      --sec:     var(--tg-theme-secondary-bg-color, #f4f4f5);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -21,212 +20,254 @@
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
-      padding: 16px;
+      padding: 16px 16px 32px;
     }
 
-    .header {
-      text-align: center;
-      padding: 20px 0 24px;
+    /* ---- QADAM INDIKATORI ---- */
+    .steps-bar { display: flex; justify-content: center; gap: 6px; margin-bottom: 20px; }
+    .steps-bar span {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--sec); transition: background .3s;
     }
-    .header .icon { font-size: 48px; }
-    .header h1 { font-size: 22px; font-weight: 700; margin-top: 8px; }
-    .header p { font-size: 14px; color: var(--hint); margin-top: 4px; }
+    .steps-bar span.on { background: var(--btn); }
 
-    .card {
-      background: var(--secondary-bg);
-      border-radius: 16px;
-      padding: 16px;
-      margin-bottom: 12px;
-    }
-    .card label {
-      display: block;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--hint);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 6px;
-    }
-    .card input {
-      display: block;
-      width: 100%;
-      background: transparent;
-      border: none;
-      outline: none;
-      font-size: 16px;
-      color: var(--text);
-      padding: 0;
+    /* ---- SAHIFA BOSHLIGI ---- */
+    .pg-head { text-align: center; padding: 12px 0 20px; }
+    .pg-head .ico { font-size: 46px; }
+    .pg-head h2 { font-size: 20px; font-weight: 700; margin-top: 8px; }
+    .pg-head p  { font-size: 13px; color: var(--hint); margin-top: 4px; }
+
+    /* ---- KARTOCHKA ---- */
+    .card { background: var(--sec); border-radius: 14px; padding: 13px 15px; margin-bottom: 10px; }
+    .card label { display: block; font-size: 11px; font-weight: 700; color: var(--hint); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 7px; }
+    .card input, .card select {
+      display: block; width: 100%;
+      background: transparent; border: none; outline: none;
+      font-size: 16px; color: var(--text);
+      -webkit-appearance: none; appearance: none;
     }
     .card input::placeholder { color: var(--hint); }
+    .sel-wrap { position: relative; }
+    .sel-wrap::after { content: '▾'; position: absolute; right: 0; top: 50%; transform: translateY(-50%); color: var(--hint); font-size: 13px; pointer-events: none; }
 
-    .divider {
-      height: 1px;
-      background: var(--btn);
-      opacity: 0.15;
-      margin: 10px 0;
+    /* ---- XIZMAT KARTOCHKALARI ---- */
+    .svc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+    .svc-card {
+      background: var(--sec); border: 2px solid transparent;
+      border-radius: 16px; padding: 20px 10px;
+      text-align: center; cursor: pointer; transition: all .15s;
+      user-select: none;
     }
+    .svc-card .s-ico  { font-size: 34px; display: block; margin-bottom: 8px; }
+    .svc-card .s-lbl  { font-size: 14px; font-weight: 700; }
+    .svc-card.sel     { border-color: var(--btn); background: rgba(38,120,182,.1); }
 
-    .route-card {
-      background: var(--secondary-bg);
-      border-radius: 16px;
-      padding: 0;
-      margin-bottom: 12px;
-      overflow: hidden;
+    /* ---- YO'LOVCHI SONLARI ---- */
+    .num-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
+    .num-btn {
+      padding: 14px 4px;
+      border: 2px solid var(--sec); border-radius: 12px;
+      background: var(--sec); color: var(--text);
+      font-size: 20px; font-weight: 700;
+      cursor: pointer; transition: all .15s;
     }
-    .route-row {
-      display: flex;
-      align-items: center;
-      padding: 14px 16px;
-      gap: 12px;
-    }
-    .route-row + .route-row { border-top: 1px solid rgba(128,128,128,0.15); }
-    .route-dot {
-      width: 10px; height: 10px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-    .dot-from { background: #34c759; }
-    .dot-to   { background: #ff3b30; }
-    .route-row input {
-      flex: 1;
-      background: transparent;
-      border: none;
-      outline: none;
-      font-size: 16px;
-      color: var(--text);
-    }
-    .route-row input::placeholder { color: var(--hint); }
+    .num-btn.sel { border-color: var(--btn); background: var(--btn); color: var(--btn-txt); }
 
-    .submit-btn {
-      display: block;
-      width: 100%;
-      padding: 16px;
-      background: var(--btn);
-      color: var(--btn-text);
-      font-size: 16px;
-      font-weight: 600;
-      border: none;
-      border-radius: 16px;
-      cursor: pointer;
+    /* ---- TUGMALAR ---- */
+    .main-btn {
+      display: block; width: 100%; padding: 15px;
       margin-top: 8px;
-      transition: opacity 0.2s;
+      background: var(--btn); color: var(--btn-txt);
+      font-size: 16px; font-weight: 700;
+      border: none; border-radius: 14px; cursor: pointer;
+      transition: opacity .2s;
     }
-    .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .main-btn:disabled { opacity: .45; cursor: not-allowed; }
+    .back-btn {
+      display: block; width: 100%; padding: 12px;
+      margin-top: 4px; background: transparent;
+      color: var(--hint); font-size: 14px;
+      border: none; cursor: pointer;
+    }
 
-    .error-msg {
-      color: #ff3b30;
-      font-size: 14px;
-      text-align: center;
-      margin-top: 12px;
-      min-height: 20px;
-    }
+    /* ---- XATO ---- */
+    .err { color: #ff3b30; font-size: 13px; text-align: center; margin-top: 8px; min-height: 18px; }
 
-    /* === SUCCESS SCREEN === */
-    #successSection {
-      display: none;
-      text-align: center;
-      padding: 40px 16px;
-    }
-    .success-icon { font-size: 72px; }
-    .success-title {
-      font-size: 24px;
-      font-weight: 700;
-      margin: 16px 0 8px;
-      color: var(--text);
-    }
-    .success-sub {
-      font-size: 16px;
-      color: var(--hint);
-      line-height: 1.5;
-    }
-    .success-info {
-      background: var(--secondary-bg);
-      border-radius: 16px;
-      padding: 16px;
-      margin: 24px 0;
-      text-align: left;
-    }
-    .success-info .row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px 0;
-      font-size: 15px;
-    }
-    .success-info .row + .row { border-top: 1px solid rgba(128,128,128,0.15); }
-    .success-info .row .lbl { color: var(--hint); font-size: 13px; }
-    .success-info .row .val { font-weight: 600; }
-    .close-btn {
-      display: block;
-      width: 100%;
-      padding: 16px;
-      background: #34c759;
-      color: #fff;
-      font-size: 16px;
-      font-weight: 600;
-      border: none;
-      border-radius: 16px;
-      cursor: pointer;
+    /* ---- QADAM ko'rish/yashirish ---- */
+    .step { display: none; }
+    .step.active { display: block; animation: up .25s ease; }
+    @keyframes up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ---- MUVAFFAQIYAT EKRANI ---- */
+    #sSuccess { text-align: center; padding: 32px 0 0; }
+    .big-ico { font-size: 70px; }
+    .ok-title { font-size: 22px; font-weight: 700; margin: 14px 0 6px; }
+    .ok-sub   { font-size: 14px; color: var(--hint); line-height: 1.5; }
+    .summary-box { background: var(--sec); border-radius: 14px; padding: 4px 15px; margin: 18px 0; text-align: left; }
+    .s-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; font-size: 14px; border-bottom: 1px solid rgba(128,128,128,.1); }
+    .s-row:last-child { border-bottom: none; }
+    .s-lbl { color: var(--hint); font-size: 13px; }
+    .s-val { font-weight: 600; max-width: 58%; text-align: right; }
+    .green-btn {
+      display: block; width: 100%; padding: 15px;
+      background: #34c759; color: #fff;
+      font-size: 16px; font-weight: 700;
+      border: none; border-radius: 14px; cursor: pointer;
     }
   </style>
 </head>
 <body>
 
-<!-- FORMA -->
-<div id="formSection">
-  <div class="header">
-    <div class="icon">🚕</div>
-    <h1>Taksi buyurtma</h1>
-    <p>Qayerga borishingizni kiriting</p>
+<!-- ============ QADAM 1 : ISM ============ -->
+<div id="s1" class="step active">
+  <div class="steps-bar"><span class="on"></span><span></span><span></span></div>
+  <div class="pg-head">
+    <div class="ico">👋</div>
+    <h2>Xush kelibsiz!</h2>
+    <p>Ismingizni kiriting</p>
   </div>
-
-  <form id="rideForm" novalidate>
-    <div class="route-card">
-      <div class="route-row">
-        <span class="route-dot dot-from"></span>
-        <input name="from" type="text" placeholder="Qayerdan (manzil yoki shahar)" required autocomplete="off" />
-      </div>
-      <div class="route-row">
-        <span class="route-dot dot-to"></span>
-        <input name="to" type="text" placeholder="Qayerga (manzil yoki shahar)" required autocomplete="off" />
-      </div>
-    </div>
-
-    <div class="card">
-      <label>Telefon raqam</label>
-      <input name="phone" type="tel" placeholder="+998 90 000 00 00" required autocomplete="tel" />
-    </div>
-
-    <input type="hidden" name="userId" id="userId" />
-    <input type="hidden" name="username" id="username" />
-
-    <button type="submit" class="submit-btn">🔍 Taksi qidirish</button>
-    <p class="error-msg" id="errorMsg"></p>
-  </form>
+  <div class="card">
+    <label>Ism</label>
+    <input id="inpName" type="text" placeholder="Masalan: Alisher" autocomplete="given-name"/>
+  </div>
+  <button class="main-btn" id="btn1">Davom etish →</button>
+  <p class="err" id="e1"></p>
 </div>
 
-<!-- MUVAFFAQIYAT -->
-<div id="successSection">
-  <div class="success-icon">✅</div>
-  <div class="success-title">Qabul qilindi!</div>
-  <div class="success-sub">Taksichlar siz bilan tez orada bog'lanadi</div>
+<!-- ============ QADAM 2 : XIZMAT TURI ============ -->
+<div id="s2" class="step">
+  <div class="steps-bar"><span class="on"></span><span class="on"></span><span></span></div>
+  <div class="pg-head">
+    <div class="ico">🗂️</div>
+    <h2>Xizmat turini tanlang</h2>
+  </div>
+  <div class="svc-grid">
+    <div class="svc-card" id="svcTaksi">
+      <span class="s-ico">🚕</span>
+      <span class="s-lbl">Taksi</span>
+    </div>
+    <div class="svc-card" id="svcDelivery">
+      <span class="s-ico">📦</span>
+      <span class="s-lbl">Yetkazib berish</span>
+    </div>
+  </div>
+  <button class="main-btn" id="btn2" disabled>Davom etish →</button>
+  <button class="back-btn" id="back2">← Orqaga</button>
+</div>
 
-  <div class="success-info">
-    <div class="row">
-      <span class="lbl">Qayerdan</span>
-      <span class="val" id="s-from"></span>
-    </div>
-    <div class="row">
-      <span class="lbl">Qayerga</span>
-      <span class="val" id="s-to"></span>
-    </div>
-    <div class="row">
-      <span class="lbl">Telefon</span>
-      <span class="val" id="s-phone"></span>
+<!-- ============ QADAM 3A : TAKSI ============ -->
+<div id="s3t" class="step">
+  <div class="steps-bar"><span class="on"></span><span class="on"></span><span class="on"></span></div>
+  <div class="pg-head">
+    <div class="ico">🚕</div>
+    <h2>Taksi ma'lumotlari</h2>
+  </div>
+
+  <div class="card">
+    <label>Qayerdan</label>
+    <div class="sel-wrap">
+      <select id="tFrom">
+        <option value="">— Shaharni tanlang —</option>
+        <option>Xorazm (Urganch)</option>
+        <option>Nukus</option>
+        <option>Buxoro</option>
+        <option>Navoiy</option>
+        <option>Samarqand</option>
+        <option>Toshkent</option>
+      </select>
     </div>
   </div>
 
-  <button class="close-btn" id="closeBtn">Yopish</button>
+  <div class="card">
+    <label>Qayerga</label>
+    <div class="sel-wrap">
+      <select id="tTo">
+        <option value="">— Shaharni tanlang —</option>
+        <option>Xorazm (Urganch)</option>
+        <option>Nukus</option>
+        <option>Buxoro</option>
+        <option>Navoiy</option>
+        <option>Samarqand</option>
+        <option>Toshkent</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="card">
+    <label>Yo'lovchi soni</label>
+    <div class="num-grid">
+      <button type="button" class="num-btn" data-n="1">1</button>
+      <button type="button" class="num-btn" data-n="2">2</button>
+      <button type="button" class="num-btn" data-n="3">3</button>
+      <button type="button" class="num-btn" data-n="4">4</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <label>Telefon raqam</label>
+    <input id="tPhone" type="tel" placeholder="+998 90 000 00 00" autocomplete="tel"/>
+  </div>
+
+  <button class="main-btn" id="tSubmit">📤 Yuborish</button>
+  <button class="back-btn" id="back3t">← Orqaga</button>
+  <p class="err" id="eT"></p>
+</div>
+
+<!-- ============ QADAM 3B : YETKAZIB BERISH ============ -->
+<div id="s3d" class="step">
+  <div class="steps-bar"><span class="on"></span><span class="on"></span><span class="on"></span></div>
+  <div class="pg-head">
+    <div class="ico">📦</div>
+    <h2>Yetkazib berish</h2>
+  </div>
+
+  <div class="card">
+    <label>Qayerdan</label>
+    <div class="sel-wrap">
+      <select id="dFrom">
+        <option value="">— Shaharni tanlang —</option>
+        <option>Xorazm (Urganch)</option>
+        <option>Nukus</option>
+        <option>Buxoro</option>
+        <option>Navoiy</option>
+        <option>Samarqand</option>
+        <option>Toshkent</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="card">
+    <label>Qayerga</label>
+    <div class="sel-wrap">
+      <select id="dTo">
+        <option value="">— Shaharni tanlang —</option>
+        <option>Xorazm (Urganch)</option>
+        <option>Nukus</option>
+        <option>Buxoro</option>
+        <option>Navoiy</option>
+        <option>Samarqand</option>
+        <option>Toshkent</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="card">
+    <label>Telefon raqam</label>
+    <input id="dPhone" type="tel" placeholder="+998 90 000 00 00" autocomplete="tel"/>
+  </div>
+
+  <button class="main-btn" id="dSubmit">📤 Yuborish</button>
+  <button class="back-btn" id="back3d">← Orqaga</button>
+  <p class="err" id="eD"></p>
+</div>
+
+<!-- ============ MUVAFFAQIYAT ============ -->
+<div id="sSuccess" class="step">
+  <div class="big-ico">✅</div>
+  <div class="ok-title">Qabul qilindi!</div>
+  <div class="ok-sub">Tez orada siz bilan bog'lanishadi</div>
+  <div class="summary-box" id="summaryBox"></div>
+  <button class="green-btn" id="closeBtn">Yopish</button>
 </div>
 
 <script src="app.js"></script>

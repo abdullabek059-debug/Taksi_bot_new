@@ -15,13 +15,24 @@ const BOT_TOKEN = process.env.BOT_TOKEN;
 const WEB_APP_URL = (process.env.WEB_APP_URL || '').replace(/\/$/, '');
 const PERSONAL_GROUP_ID = process.env.PERSONAL_GROUP_ID;
 
+// Oddiy URL, tokendagi ':' Express route parametri sifatida xato tahlil qilmasligi uchun
+const WEBHOOK_PATH = '/tgwebhook';
+
 app.use('/', express.static(path.join(__dirname, 'web')));
 
-// Webhook endpoint (faqat production da ishlatiladi)
+// Sog'lik tekshiruvi
+app.get('/health', (_req, res) => {
+  res.json({ ok: true, mode: useWebhook ? 'webhook' : 'polling', time: new Date().toISOString() });
+});
+
 if (useWebhook) {
-  const webhookPath = `/tgwebhook/${BOT_TOKEN}`;
-  app.post(webhookPath, (req, res) => {
-    bot.processUpdate(req.body);
+  app.post(WEBHOOK_PATH, (req, res) => {
+    console.log('[webhook] So\'rov keldi:', JSON.stringify(req.body).slice(0, 120));
+    try {
+      bot.processUpdate(req.body);
+    } catch (err) {
+      console.error('[webhook] processUpdate xatosi:', err.message);
+    }
     res.sendStatus(200);
   });
 }
@@ -53,20 +64,26 @@ app.post('/request', async (req, res) => {
     await sendToTelegram(PERSONAL_GROUP_ID, text);
     return res.json({ ok: true });
   } catch (err) {
-    console.error(err?.response?.data || err.message);
+    console.error('[request] Xabar yuborishda xato:', err?.response?.data || err.message);
     return res.status(500).json({ ok: false, error: 'Xabar yuborishda xato' });
   }
 });
 
 app.listen(PORT, async () => {
-  console.log(`Web app ishlamoqda: http://localhost:${PORT}`);
+  console.log(`[server] Web app ishlamoqda: http://localhost:${PORT}`);
+  console.log(`[server] Rejim: ${useWebhook ? 'webhook' : 'polling'}`);
+
   if (useWebhook) {
-    const webhookUrl = `${WEB_APP_URL}/tgwebhook/${BOT_TOKEN}`;
+    const webhookUrl = `${WEB_APP_URL}${WEBHOOK_PATH}`;
     try {
-      await bot.setWebHook(webhookUrl);
-      console.log(`Webhook o'rnatildi: ${webhookUrl}`);
+      await bot.setWebHook(webhookUrl, { allowed_updates: ['message', 'callback_query'] });
+      console.log(`[server] Webhook o'rnatildi: ${webhookUrl}`);
+
+      // Webhook holati tekshiruvi
+      const info = await bot.getWebHookInfo();
+      console.log(`[server] Webhook info: url=${info.url}, pending=${info.pending_update_count}, last_error=${info.last_error_message || 'yo\'q'}`);
     } catch (err) {
-      console.error('Webhook xatosi:', err.message);
+      console.error('[server] Webhook xatosi:', err.message);
     }
   }
 });

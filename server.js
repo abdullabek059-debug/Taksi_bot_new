@@ -1,4 +1,11 @@
 require('dotenv').config();
+// start bot when the server process launches
+try {
+  require('./bot');
+} catch (err) {
+  console.error('Failed to start bot:', err && err.message ? err.message : err);
+}
+
 const express = require('express');
 const path = require('path');
 const axios = require('axios');
